@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import requests
 
+
 class Crawler:
     def __init__(self):
         self.start_time = datetime.datetime.now()
@@ -54,18 +55,19 @@ class Crawler:
                     decoded = json.loads(response.text)['msg']
                     self.done += 1
                     for x in decoded:
-                        self.bikes_count+=1
+                        self.bikes_count += 1
                         if x['brand'] == 'ofo':
-                            c.execute("INSERT INTO ofo VALUES (%d,'%s',%f,%f)" % (
+                            c.execute("INSERT OR IGNORE INTO ofo VALUES (%d,'%s',%f,%f)" % (
                                 int(time.time()) * 1000, x['id'], x['lat'], x['lng']))
                         else:
-                            c.execute("INSERT INTO mobike VALUES (%d,'%s',%f,%f)" % (
+                            c.execute("INSERT OR IGNORE INTO mobike VALUES (%d,'%s',%f,%f)" % (
                                 int(time.time()) * 1000, x['id'], x['lat'], x['lng']))
 
                     timespent = datetime.datetime.now() - self.start_time
                     percent = self.done / self.total
                     total = timespent / percent
-                    print("位置 %s, 单车数量 %s, 进度 %0.2f%%, 速度 %0.2f个/分钟, 总时间 %s, 剩余时间 %s" % (args, self.bikes_count, percent * 100, self.done / timespent.total_seconds() * 60, total, total - timespent))
+                    print("位置 %s, 单车数量 %s, 进度 %0.2f%%, 速度 %0.2f个/分钟, 总时间 %s, 剩余时间 %s" % (
+                        args, self.bikes_count, percent * 100, self.done / timespent.total_seconds() * 60, total, total - timespent))
                 except Exception as ex:
                     print(ex)
 
@@ -75,11 +77,10 @@ class Crawler:
 
         try:
             with sqlite3.connect(self.db_name) as c:
-                c.execute('''CREATE TABLE ofo
-                                    (Time DATETIME, bikeId VARCHAR(12), lat DOUBLE, lon DOUBLE)''')
-                c.execute('''CREATE TABLE mobike
-                                    (Time DATETIME, bikeId VARCHAR(12), lat DOUBLE, lon DOUBLE)''')
+                c.execute(self.generate_create_table_sql('ofo'))
+                c.execute(self.generate_create_table_sql('mobike'))
         except Exception as ex:
+            print(ex)
             pass
 
         executor = ThreadPoolExecutor(max_workers=config['workers'])
@@ -96,18 +97,29 @@ class Crawler:
         executor.shutdown()
         self.group_data()
 
+    def generate_create_table_sql(self, brand):
+        return '''CREATE TABLE {0}
+                (
+                    "Time" DATETIME,
+                    "bikeId" VARCHAR(12),
+                    lat DOUBLE,
+                    lon DOUBLE,
+                    CONSTRAINT "{0}_bikeId_lat_lon_pk"
+                        PRIMARY KEY (bikeId, lat, lon)
+                );'''.format(brand)
+
     def group_data(self):
-        print("正在合并数据")
+        print("正在导出数据")
         conn = sqlite3.connect(self.db_name)
 
-        self.drop_duplication(conn, "mobike")
-        self.drop_duplication(conn, "ofo")
+        self.export_to_csv(conn, "mobike")
+        self.export_to_csv(conn, "ofo")
 
-    def drop_duplication(self, conn, brand):
+    def export_to_csv(self, conn, brand):
         df = pd.read_sql_query("SELECT * FROM %s" % brand, conn, parse_dates=True)
-        df.drop_duplicates(subset=['bikeId', 'lon', 'lat'], inplace=True)
         df['Time'] = pd.to_datetime(df['Time'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('Asia/Chongqing')
         df.to_csv(self.csv_name + "-" + brand + ".csv", header=False, index=False)
+
 
 # 配置
 # 经纬度请用百度拾取工具拾取，http://api.map.baidu.com/lbsapi/getpoint/
