@@ -17,3 +17,12 @@
 pip3 install -r requirements.txt
 python3 crawler.py
 ```
+
+输出格式：CSV
+
+每行格式：时间戳，单车编号，经度，纬度
+
+坐标系：百度坐标系
+
+FAQ：
+请见[单车地图](http://dancheditu.com)
