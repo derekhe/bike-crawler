@@ -135,11 +135,11 @@ config = {
     # 平移量，用于遍历整个区域的最小间隔，请自行调整，必要时可以参考www.dancheditu.com
     # 参数过小则抓取太过于密集，导致重复数据过多
     # 参数过大则抓取太过于稀疏，会漏掉一些数据
-    "offset": 0.02,
+    "offset": 0.002,
     # 城市id，请参考http://www.dancheditu.com/的FAQ
     "cityid": 75,
     # 线程数，请合理利用资源，线程数请不要过大，过大服务器会返回错误
-    "workers": 20,
+    "workers": 100,
     # token，请加微信bcdata付费获取，demo只能提供单车的真实位置，但是id号是随机的
     "token": "demo"
 }
