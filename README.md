@@ -1,7 +1,7 @@
 共享单车地图爬虫
 ====================
 
-该爬虫为[单车地图](http://dancheditu.com)的Python演示代码，具备以下功能：
+该爬虫为[单车地图](http://www.dancheditu.com)的Python演示代码，具备以下功能：
 * 支持ofo和摩拜
 * 多线程爬取
 * 自动去重
@@ -25,4 +25,4 @@ python3 crawler.py
 坐标系：百度坐标系
 
 FAQ：
-请见[单车地图](http://dancheditu.com)
+请见[单车地图](http://www.dancheditu.com)
