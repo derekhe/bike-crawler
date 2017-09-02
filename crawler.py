@@ -26,7 +26,7 @@ class Crawler:
 
     def get_nearby_bikes(self, args):
         try:
-            url = "http://www.dancheditu.com:3000/bikes?lat=%s&lng=%s&cityid=%s&token=%s" % (args[0], args[1], args[2], args[3])
+            url = "http://www.dancheditu.com/api/bikes?lat=%s&lng=%s&cityid=%s&token=%s" % (args[0], args[1], args[2], args[3])
 
             headers = {
                 'charset': "utf-8",
