@@ -12,6 +12,8 @@ import pandas as pd
 import requests
 from configparser import ConfigParser
 
+from coordTransform_utils import bd09_to_gcj02, bd09_to_wgs84
+
 
 class Crawler:
     def __init__(self):
@@ -47,6 +49,15 @@ class Crawler:
         except Exception as ex:
             print(ex)
 
+    def coord_transform(self, lng, lat):
+        coord = self.config.get("DEFAULT", "coord")
+        if coord == "bd-09":
+            return lng, lat
+        if coord == "gcj02":
+            return bd09_to_gcj02(lng, lat)
+        if coord == "WGS84":
+            return bd09_to_wgs84(lng, lat)
+
     def request(self, headers, args, url):
         response = requests.request(
             "GET", url, headers=headers,
@@ -60,12 +71,14 @@ class Crawler:
                     self.done += 1
                     for x in decoded:
                         self.bikes_count += 1
+                        x_lng, x_lat = self.coord_transform(x['lng'], x['lat'])
+
                         if x['brand'] == 'ofo':
                             c.execute("INSERT OR IGNORE INTO ofo VALUES (%d,'%s',%f,%f)" % (
-                                int(time.time()) * 1000, x['id'], x['lat'], x['lng']))
+                                int(time.time()) * 1000, x['id'], x_lat, x_lng))
                         else:
                             c.execute("INSERT OR IGNORE INTO mobike VALUES (%d,'%s',%f,%f)" % (
-                                int(time.time()) * 1000, x['id'], x['lat'], x['lng']))
+                                int(time.time()) * 1000, x['id'], x_lat, x_lng))
 
                     timespent = datetime.datetime.now() - self.start_time
                     percent = self.done / self.total
