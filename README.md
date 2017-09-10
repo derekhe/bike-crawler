@@ -12,6 +12,8 @@
 
 运行前请联系微信bcdata获取token，内置的token为演示用，单车位置是真实的，ID是随机的。
 
+请根据你的需要修改配置文件config.ini，请查看内置说明。
+
 运行：
 ```
 pip3 install -r requirements.txt

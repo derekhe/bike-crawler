@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pandas as pd
 import requests
+from configparser import ConfigParser
 
 
 class Crawler:
@@ -23,6 +24,9 @@ class Crawler:
         self.total = 0
         self.done = 0
         self.bikes_count = 0
+        cfg = ConfigParser()
+        cfg.read('config.ini')
+        self.config = cfg
 
     def get_nearby_bikes(self, args):
         try:
@@ -46,7 +50,7 @@ class Crawler:
     def request(self, headers, args, url):
         response = requests.request(
             "GET", url, headers=headers,
-            timeout=30, verify=False
+            timeout=self.config.getint("DEFAULT", "timeout"), verify=False
         )
 
         with self.lock:
@@ -66,36 +70,44 @@ class Crawler:
                     timespent = datetime.datetime.now() - self.start_time
                     percent = self.done / self.total
                     total = timespent / percent
-                    print("位置 %s, 单车数量 %s, 进度 %0.2f%%, 速度 %0.2f个/分钟, 总时间 %s, 剩余时间 %s" % (
+                    print("位置 %s, 未去重单车数量 %s, 进度 %0.2f%%, 速度 %0.2f个/分钟, 总时间 %s, 剩余时间 %s" % (
                         args, self.bikes_count, percent * 100, self.done / timespent.total_seconds() * 60, total, total - timespent))
                 except Exception as ex:
                     print(ex)
 
-    def start(self, config):
-        if os.path.isfile(self.db_name):
-            os.remove(self.db_name)
+    def start(self):
+        while True:
+            if os.path.isfile(self.db_name):
+                os.remove(self.db_name)
 
-        try:
-            with sqlite3.connect(self.db_name) as c:
-                c.execute(self.generate_create_table_sql('ofo'))
-                c.execute(self.generate_create_table_sql('mobike'))
-        except Exception as ex:
-            print(ex)
-            pass
+            try:
+                with sqlite3.connect(self.db_name) as c:
+                    c.execute(self.generate_create_table_sql('ofo'))
+                    c.execute(self.generate_create_table_sql('mobike'))
+            except Exception as ex:
+                print(ex)
+                pass
 
-        executor = ThreadPoolExecutor(max_workers=config['workers'])
-        print("Start")
+            executor = ThreadPoolExecutor(max_workers=self.config.getint('DEFAULT','workers'))
+            print("Start")
 
-        self.total = 0
-        lat_range = np.arange(config['top_lat'], config['bottom_lat'], -config['offset'])
-        for lat in lat_range:
-            lng_range = np.arange(config['left_lng'], config['right_lng'], config['offset'])
-            for lon in lng_range:
-                self.total += 1
-                executor.submit(self.get_nearby_bikes, (lat, lon, config['cityid'], config['token']))
+            self.total = 0
+            lat_range = np.arange(self.config.getfloat('DEFAULT','top_lat'), self.config.getfloat('DEFAULT','bottom_lat'), -self.config.getfloat('DEFAULT','offset'))
+            for lat in lat_range:
+                lng_range = np.arange(self.config.getfloat('DEFAULT','left_lng'), self.config.getfloat('DEFAULT','right_lng'), self.config.getfloat('DEFAULT','offset'))
+                for lon in lng_range:
+                    self.total += 1
+                    executor.submit(self.get_nearby_bikes, (lat, lon, self.config.getint('DEFAULT','cityid'), self.config.get('DEFAULT','token')))
 
-        executor.shutdown()
-        self.group_data()
+            executor.shutdown()
+            self.group_data()
+
+            if not self.config.getboolean("DEFAULT", 'always_run'):
+                break
+
+            waittime = self.config.getint("DEFAULT", 'wait_time')
+            print("等待%s分钟后继续运行" % waittime)
+            time.sleep(waittime * 60)
 
     def generate_create_table_sql(self, brand):
         return '''CREATE TABLE {0}
@@ -117,32 +129,9 @@ class Crawler:
 
     def export_to_csv(self, conn, brand):
         df = pd.read_sql_query("SELECT * FROM %s" % brand, conn, parse_dates=True)
+        print(brand, "去重后数量", len(df))
         df['Time'] = pd.to_datetime(df['Time'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('Asia/Chongqing')
         df.to_csv(self.csv_name + "-" + brand + ".csv", header=False, index=False)
 
-
-# 配置
-# 经纬度请用百度拾取工具拾取，http://api.map.baidu.com/lbsapi/getpoint/
-config = {
-    # 左边经度
-    "left_lng": 103.9213455517,
-    # 上边维度
-    "top_lat": 30.7828453209,
-    # 右边经度
-    "right_lng": 104.2178123382,
-    # 右边维度
-    "bottom_lat": 30.4781772402,
-    # 平移量，用于遍历整个区域的最小间隔，请自行调整，必要时可以参考www.dancheditu.com
-    # 参数过小则抓取太过于密集，导致重复数据过多
-    # 参数过大则抓取太过于稀疏，会漏掉一些数据
-    "offset": 0.002,
-    # 城市id，请参考http://www.dancheditu.com/的FAQ
-    "cityid": 75,
-    # 线程数，请合理利用资源，线程数请不要过大，过大服务器会返回错误
-    "workers": 100,
-    # token，请加微信bcdata付费获取，demo只能提供单车的真实位置，但是id号是随机的
-    "token": "demo"
-}
-
-Crawler().start(config)
+Crawler().start()
 print("完成")
