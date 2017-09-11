@@ -27,7 +27,7 @@ class Crawler:
         self.done = 0
         self.bikes_count = 0
         cfg = ConfigParser()
-        cfg.read('config.ini')
+        cfg.read('config.ini', encoding='utf-8')
         self.config = cfg
 
     def get_nearby_bikes(self, args):
