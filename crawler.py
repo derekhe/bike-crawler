@@ -64,6 +64,10 @@ class Crawler:
             timeout=self.config.getint("DEFAULT", "timeout"), verify=False
         )
 
+        if response.status_code!=200:
+            print("出错咯！", response.text)
+            return
+
         with self.lock:
             with sqlite3.connect(self.db_name) as c:
                 try:
