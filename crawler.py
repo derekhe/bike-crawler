@@ -66,6 +66,9 @@ class Crawler:
 
         if response.status_code!=200:
             print("出错咯！", response.text)
+
+            if "无效的token" in response.text:
+                os._exit(-1)
             return
 
         with self.lock:
