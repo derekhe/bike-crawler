@@ -155,7 +155,13 @@ class Crawler:
         df = pd.read_sql_query("SELECT * FROM %s" % brand, conn, parse_dates=True)
         print(brand, "去重后数量", len(df))
         df['Time'] = pd.to_datetime(df['Time'], unit='ms').dt.tz_localize('UTC').dt.tz_convert('Asia/Chongqing')
-        df.to_csv(self.csv_name + "-" + brand + ".csv", header=False, index=False)
+        compress = None
+        csv_file = self.csv_name + "-" + brand + ".csv"
+        if self.config.getboolean("DEFAULT","compress"):
+            compress = 'gzip'
+            csv_file = self.csv_name + "-" + brand + ".csv.gz"
+
+        df.to_csv(csv_file, header=False, index=False, compression=compress)
 
 Crawler().start()
 print("完成")
