@@ -21,7 +21,7 @@ class Crawler:
         self.csv_path = "./db/" + datetime.datetime.now().strftime("%Y%m%d")
         os.makedirs(self.csv_path, exist_ok=True)
         self.csv_name = self.csv_path + "/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.db_name = "./temp.db"
+        self.db_name = "file:database?mode=memory&cache=shared"
         self.lock = threading.Lock()
         self.total = 0
         self.done = 0
@@ -96,14 +96,11 @@ class Crawler:
                     print(ex)
 
     def connect_db(self):
-        return sqlite3.connect(self.db_name, cached_statements=1000)
+        return sqlite3.connect(self.db_name, uri=True)
 
     def start(self):
         while True:
             self.__init__()
-
-            if os.path.isfile(self.db_name):
-                os.remove(self.db_name)
 
             try:
                 with self.connect_db() as c:
