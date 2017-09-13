@@ -7,6 +7,7 @@
 * 自动去重
 * 坐标系转换
 * 按照ofo和摩拜输出对应的csv文件，存放在db/【日期】/【日期】-【时间】-【品牌】.csv文件内
+* gzip压缩存储
 
 # 运行环境
 * Python3
@@ -17,14 +18,18 @@
 请根据你的需要修改配置文件config.ini，请查看内置说明。
 
 ## Linux/Mac
-运行：
+* 下载[最新代码](https://github.com/derekhe/bike-crawler/archive/master.zip)并解压
+* 修改config.ini确保坐标和区域等参数正确
+* 运行：
 ```
 pip3 install -r requirements.txt
 python3 crawler.py
 ```
 
 ## Windows
-运行run.bat
+* 下载[最新代码](https://github.com/derekhe/bike-crawler/archive/master.zip)并解压
+* 修改config.ini确保坐标和区域等参数正确
+* 运行run.bat
 
 # 输出格式
 
