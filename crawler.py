@@ -72,7 +72,7 @@ class Crawler:
             return
 
         with self.lock:
-            with sqlite3.connect(self.db_name) as c:
+            with self.connect_db() as c:
                 try:
                     decoded = json.loads(response.text)['msg']
                     self.done += 1
@@ -95,13 +95,18 @@ class Crawler:
                 except Exception as ex:
                     print(ex)
 
+    def connect_db(self):
+        return sqlite3.connect(self.db_name, cached_statements=1000)
+
     def start(self):
         while True:
+            self.__init__()
+
             if os.path.isfile(self.db_name):
                 os.remove(self.db_name)
 
             try:
-                with sqlite3.connect(self.db_name) as c:
+                with self.connect_db() as c:
                     c.execute(self.generate_create_table_sql('ofo'))
                     c.execute(self.generate_create_table_sql('mobike'))
             except Exception as ex:
@@ -112,9 +117,11 @@ class Crawler:
             print("Start")
 
             self.total = 0
-            lat_range = np.arange(self.config.getfloat('DEFAULT','top_lat'), self.config.getfloat('DEFAULT','bottom_lat'), -self.config.getfloat('DEFAULT','offset'))
+            top_lng, top_lat = self.config.get("DEFAULT","top_left").split(",")
+            bottom_lng, bottom_lat = self.config.get("DEFAULT", "bottom_right").split(",")
+            lat_range = np.arange(float(top_lat), float(bottom_lat), -self.config.getfloat('DEFAULT','offset'))
             for lat in lat_range:
-                lng_range = np.arange(self.config.getfloat('DEFAULT','left_lng'), self.config.getfloat('DEFAULT','right_lng'), self.config.getfloat('DEFAULT','offset'))
+                lng_range = np.arange(float(top_lng), float(bottom_lng), self.config.getfloat('DEFAULT','offset'))
                 for lon in lng_range:
                     self.total += 1
                     executor.submit(self.get_nearby_bikes, (lat, lon, self.config.getint('DEFAULT','cityid'), self.config.get('DEFAULT','token')))
@@ -142,7 +149,7 @@ class Crawler:
 
     def group_data(self):
         print("正在导出数据")
-        conn = sqlite3.connect(self.db_name)
+        conn = self.connect_db()
 
         self.export_to_csv(conn, "mobike")
         self.export_to_csv(conn, "ofo")
