@@ -1,7 +1,12 @@
 共享单车地图爬虫
 ====================
 
-# 已经失效，谢谢
+# 感谢您的支持
+# 由于摩拜单车和ofo不断的封杀各种爬虫行为，所以单车地图被迫关闭。
+# 此处的python代码可以用于学习用途
+# 如果你还有问题交流可以加微信bcdata
+
+<img src="https://s21.postimg.org/58f67s3dz/Wechat_IMG20.jpg" width="350">
 
 该爬虫为[单车地图](http://www.dancheditu.com)的Python演示代码，具备以下功能：
 * 支持ofo和摩拜
@@ -40,7 +45,3 @@ python3 crawler.py
 每行格式：时间戳，单车编号，经度，纬度
 
 常见问题，请见[单车地图](http://www.dancheditu.com)
-
-如果这个小程序对你有帮助，请赏一杯咖啡或者Star，谢谢：）
-
-<img src="https://s21.postimg.org/58f67s3dz/Wechat_IMG20.jpg" width="350">
